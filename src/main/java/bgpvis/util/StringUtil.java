@@ -26,6 +26,9 @@ public final class StringUtil {
 	public static final CharMatcher SEMI_COLON = CharMatcher.is(';');
 	public static final CharMatcher TAB = CharMatcher.is('\t');
 	public static final CharMatcher HASHTAG = CharMatcher.is('#');
+	public static final CharMatcher LEFT_CURLY_BRACE = CharMatcher.is('{');
+	public static final CharMatcher RIGHT_CURLY_BRACE = CharMatcher.is('}');
+	public static final CharMatcher CURLY_BRACES = LEFT_CURLY_BRACE.or(RIGHT_CURLY_BRACE);
 
 	private static final Set<String> TRUTHY_VALUES = Sets.newHashSet("y",
 			"yes", "1");
