@@ -6,6 +6,7 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Joiner;
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
@@ -45,20 +46,8 @@ public final class StringUtil {
 	 * @return
 	 */
 	public static String trim(String s) {
-		return CharMatcher.WHITESPACE.trimFrom(s);
-	}
-
-	/**
-	 * Normalize the string by trimming it. Avoids NullPointerException as nulls
-	 * are transformed to an empty string. 'Blank' strings that contain only
-	 * whitespace or control characters, will be transformed to an empty string.
-	 * 
-	 * @param s
-	 * @return
-	 */
-	public static String norm(String s) {
-		s = Strings.nullToEmpty(s);
-		return trim(s);
+		String val = Strings.nullToEmpty(s);
+		return CharMatcher.WHITESPACE.trimFrom(val);
 	}
 
 	public static String concat(Object... objs) {
@@ -67,6 +56,19 @@ public final class StringUtil {
 			sb.append(obj);
 		}
 		return sb.toString();
+	}
+	
+	public static String concat(Iterable<?> parts, String separator) {
+		boolean skipNulls = true;
+		return concat(parts, separator, skipNulls);
+	}
+	
+	public static String concat(Iterable<?> parts, String separator, boolean skipNulls) {
+		Joiner j = Joiner.on(separator);
+		if (skipNulls) {
+			j.skipNulls();
+		}
+		return j.join(parts);
 	}
 
 	public static List<String> split(String s, CharMatcher separator) {
@@ -96,7 +98,7 @@ public final class StringUtil {
 	}
 
 	public static boolean truthy(String s) {
-		String val = norm(s).toLowerCase();
+		String val = trim(s).toLowerCase();
 		if (TRUTHY_VALUES.contains(val)) {
 			return true;
 		}
