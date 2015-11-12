@@ -32,6 +32,10 @@ public final class AsPath {
 	private AsPath() {
 		// Private constructor, not meant to be instantiated
 	}
+	
+	public static List<String> asList(String asPath) {
+		return split(asPath, CharMatcher.WHITESPACE);
+	}
 
 	/**
 	 * Curly braces in the AS path indicates the presence of AS set.
