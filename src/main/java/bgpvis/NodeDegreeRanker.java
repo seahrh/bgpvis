@@ -24,6 +24,10 @@ public final class NodeDegreeRanker {
 	private static final String IN_FILE_PATH = System.getProperty("bgp.in.file");
 	private static final String OUT_FILE_PATH = System.getProperty("bgp.out.file");
 	private static final int TOP_K = Integer.parseInt(System.getProperty("bgp.in.top-k"));
+		
+	/**
+	 * ASPATH attribute name is not present in Task 2 input file. 
+	 */
 	private static final boolean ASPATH_ATTRIBUTE_PRESENT = false;
 
 	/**
@@ -47,6 +51,10 @@ public final class NodeDegreeRanker {
 			br = new BufferedReader(new FileReader(file));
 			while ((line = br.readLine()) != null) {
 				line = trim(line);
+				
+				// Skip lines that are not AS paths 
+				// (such as the last two lines in Task 1 output file)
+				
 				validation = validate(line, ASPATH_ATTRIBUTE_PRESENT); 
 				if (validation.hasErrors()) {
 					log.warn("{}", validation);
@@ -54,8 +62,17 @@ public final class NodeDegreeRanker {
 				}
 				asPaths.add(line);
 			}
+			
+			// Get neighbours of each AS
+			
 			Multimap<String, String> neighbours = AsGraph.neighbours(asPaths);
+			
+			// Index AS by node degree (number of adjacent neighbours)
+			
 			TreeMultimap<Integer, String> asByNodeDegree = AsGraph.nodeDegree(neighbours);
+			
+			// Get top k ASes by largest node degree
+			
 			List<String> out = AsGraph.top(asByNodeDegree, TOP_K);
 			file = MyFileWriter.write(out, OUT_FILE_PATH);
 			log.info("Saved {}", file.getAbsolutePath());

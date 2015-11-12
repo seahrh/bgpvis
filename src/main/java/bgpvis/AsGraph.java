@@ -1,6 +1,5 @@
 package bgpvis;
 
-import static bgpvis.util.StringUtil.*;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -21,6 +20,11 @@ public final class AsGraph {
 		// Private constructor, not meant to be instantiated
 	}
 
+	/**
+	 * Get neighbours of every AS
+	 * @param asPaths
+	 * @return 
+	 */
 	public static Multimap<String, String> neighbours(List<String> asPaths) {
 		Multimap<String, String> neighbours = HashMultimap.create();
 		List<String> asList;
@@ -40,6 +44,11 @@ public final class AsGraph {
 		return neighbours;
 	}
 
+	/**
+	 * Index AS by node degree (number of adjacent neighbours)
+	 * @param neighbours
+	 * @return
+	 */
 	public static TreeMultimap<Integer, String> nodeDegree(
 			Multimap<String, String> neighbours) {
 		Map<String, Collection<String>> neighboursMap = neighbours.asMap();
@@ -56,6 +65,12 @@ public final class AsGraph {
 		return result;
 	}
 	
+	/**
+	 * Get top k ASes by largest node degree
+	 * @param asByNodeDegree
+	 * @param k
+	 * @return
+	 */
 	public static List<String> top(TreeMultimap<Integer, String> asByNodeDegree, int k) {
 		List<String> result = new ArrayList<String>(k);
 		NavigableMap<Integer,Collection<String>> asByNodeDegreeMap = asByNodeDegree.asMap().descendingMap();
