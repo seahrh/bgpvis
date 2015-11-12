@@ -66,7 +66,7 @@ public final class AsGraph {
 			degree = entry.getKey();
 		    ases = entry.getValue();
 		    for (String as : ases) {
-		    	result.add(concat(as, " (", degree, ")"));
+		    	result.add(as);
 		    	if (result.size() == k) {
 		    		enough = true;
 		    		break;
