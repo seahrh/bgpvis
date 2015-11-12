@@ -22,11 +22,13 @@ import bgpvis.validation.ValidationResult;
 
 public final class BgpPreprocessor {
 	private static final Logger log = LoggerFactory.getLogger(BgpPreprocessor.class);
+	private static final String IN_FILE_PATH = System.getProperty("bgp.in.file");
+	private static final String OUT_FILE_PATH = System.getProperty("bgp.out.file");
 	
 	/**
 	 * Use for collection sizing
 	 */
-	private static final int EXPECTED_NUMBER_OF_INPUT_AS_PATHS = 4286060 * 2;
+	private static final int EXPECTED_NUMBER_OF_AS_PATHS = 4286060 * 2;
 
 	private BgpPreprocessor() {
 		// Private constructor, not meant to be instantiated
@@ -34,15 +36,14 @@ public final class BgpPreprocessor {
 
 	public static void main(String[] args) throws IOException {
 		long startTime = System.currentTimeMillis();
-		String inFilePath = System.getProperty("bgp.in.file");
-		String outFilePath = System.getProperty("bgp.out.file");
+		
 		BufferedReader br = null;
-		File file = new File(inFilePath);
+		File file = new File(IN_FILE_PATH);
 		String line = "";
 		ValidationResult validation;
-		List<String> out = new ArrayList<String>(EXPECTED_NUMBER_OF_INPUT_AS_PATHS);
-		Set<String> asSet = new HashSet<String>(EXPECTED_NUMBER_OF_INPUT_AS_PATHS);
-		Set<String> pathSet = new HashSet<String>(EXPECTED_NUMBER_OF_INPUT_AS_PATHS);
+		List<String> out = new ArrayList<String>(EXPECTED_NUMBER_OF_AS_PATHS);
+		Set<String> asSet = new HashSet<String>(EXPECTED_NUMBER_OF_AS_PATHS);
+		Set<String> pathSet = new HashSet<String>(EXPECTED_NUMBER_OF_AS_PATHS);
 		String asPath;
 
 		try {
@@ -81,7 +82,7 @@ public final class BgpPreprocessor {
 			}
 			out.add(concat("Number of ASes: ", asSet.size()));
 			out.add(concat("Number of AS paths: ", pathSet.size()));
-			file = MyFileWriter.write(out, outFilePath);
+			file = MyFileWriter.write(out, OUT_FILE_PATH);
 			log.info("Saved {}", file.getAbsolutePath());
 		} finally {
 			if (br != null) {
