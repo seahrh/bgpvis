@@ -20,12 +20,12 @@ public final class AsPath {
 	private static final String ASPATH_ATTRIBUTE = "ASPATH:";
 
 	/**
-	 * AS are separated by whitespace in the AS path.
+	 * AS are separated by whitespace in the output AS path.
 	 */
 	private static final String OUTPUT_AS_SEPARATOR = " ";
 	
 	/**
-	 * AS are separated by whitespace in the AS path.
+	 * AS are separated by whitespace in the AS path. Comma and curly braces apply to AS set.
 	 */
 	private static final CharMatcher INPUT_AS_SEPARATOR = CharMatcher.WHITESPACE.or(CURLY_BRACES).or(COMMA);
 

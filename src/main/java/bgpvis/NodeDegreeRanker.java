@@ -1,5 +1,7 @@
 package bgpvis;
 
+import static bgpvis.AsPath.*;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -8,8 +10,11 @@ import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import bgpvis.validation.ValidationResult;
+
 public final class NodeDegreeRanker {
 	private static final Logger log = LoggerFactory.getLogger(NodeDegreeRanker.class);
+	private static final boolean ASPATH_ATTRIBUTE_PRESENT = false;
 
 	/**
 	 * Use for collection sizing
@@ -27,9 +32,15 @@ public final class NodeDegreeRanker {
 		BufferedReader br = null;
 		File file = new File(inFilePath);
 		String line = "";
+		ValidationResult validation;
 		try {
 			br = new BufferedReader(new FileReader(file));
 			while ((line = br.readLine()) != null) {
+				validation = validate(line, ASPATH_ATTRIBUTE_PRESENT); 
+				if (validation.hasErrors()) {
+					log.warn("{}", validation);
+					continue;
+				}
 				
 			}
 		} finally {

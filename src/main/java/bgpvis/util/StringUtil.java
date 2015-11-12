@@ -71,30 +71,18 @@ public final class StringUtil {
 		return j.join(parts);
 	}
 
-	public static List<String> split(String s, CharMatcher separator) {
-		String msg;
-		if (s == null) {
-			msg = "string must not be null";
-			log.error(msg);
-			throw new IllegalArgumentException(msg);
+	public static List<String> split(String s, CharMatcher separator, boolean omitEmptyStrings) {
+		Splitter sp = Splitter.on(separator).trimResults();
+		if (omitEmptyStrings) {
+			sp.omitEmptyStrings();
 		}
-		return Splitter.on(separator)
-			.trimResults()
-			.splitToList(s);
+		return sp.splitToList(s);
 	}
 
-	public static List<String> splitAndOmitEmptyStrings(String s,
+	public static List<String> split(String s,
 			CharMatcher separator) {
-		String msg;
-		if (s == null) {
-			msg = "string must not be null";
-			log.error(msg);
-			throw new IllegalArgumentException(msg);
-		}
-		return Splitter.on(separator)
-			.trimResults()
-			.omitEmptyStrings()
-			.splitToList(s);
+		boolean omitEmptyStrings = true;
+		return split(s, separator, omitEmptyStrings);
 	}
 
 	public static boolean truthy(String s) {

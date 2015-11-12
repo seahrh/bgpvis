@@ -1,6 +1,6 @@
 package bgpvis.etl;
 
-import static bgpvis.util.StringUtil.concat;
+import static bgpvis.util.StringUtil.*;
 import static bgpvis.AsPath.*;
 
 import java.io.BufferedReader;
@@ -14,6 +14,8 @@ import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Strings;
 
 import bgpvis.util.MyFileWriter;
 import bgpvis.validation.ValidationResult;
@@ -46,15 +48,17 @@ public final class BgpPreprocessor {
 		try {
 			br = new BufferedReader(new FileReader(file));
 			while ((line = br.readLine()) != null) {
-				validation = validate(line);
-				if (validation.hasErrors()) {
-					log.warn("{}", validation);
-					continue;
-				}
-
+				line = trim(line);
+				
 				// Skip AS paths that contain AS set
 
 				if (containsAsSet(line)) {
+					continue;
+				}
+				
+				validation = validate(line);
+				if (validation.hasErrors()) {
+					log.warn("{}", validation);
 					continue;
 				}
 				
