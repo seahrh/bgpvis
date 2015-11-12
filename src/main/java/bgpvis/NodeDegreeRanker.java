@@ -69,7 +69,7 @@ public final class NodeDegreeRanker {
 			
 			// Index AS by node degree (number of adjacent neighbours)
 			
-			TreeMultimap<Integer, String> asByNodeDegree = AsGraph.nodeDegree(neighbours);
+			TreeMultimap<Integer, String> asByNodeDegree = AsGraph.asByNodeDegree(neighbours);
 			
 			// Get top k ASes by largest node degree
 			
