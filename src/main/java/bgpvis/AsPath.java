@@ -1,8 +1,6 @@
 package bgpvis;
 
-import static bgpvis.util.StringUtil.CURLY_BRACES;
-import static bgpvis.util.StringUtil.concat;
-import static bgpvis.util.StringUtil.split;
+import static bgpvis.util.StringUtil.*;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -20,14 +18,16 @@ import com.google.common.base.Strings;
 public final class AsPath {
 	private static final Logger log = LoggerFactory.getLogger(AsPath.class);
 	private static final String ASPATH_ATTRIBUTE = "ASPATH:";
-	/**
-	 * Min 2 tokens in the AS path (ASPATH attribute and 1 AS)
-	 */
-	private static final int ASPATH_MIN_NUMBER_OF_TOKENS = 2;
+
 	/**
 	 * AS are separated by whitespace in the AS path.
 	 */
-	public static final String AS_SEPARATOR = " ";
+	private static final String OUTPUT_AS_SEPARATOR = " ";
+	
+	/**
+	 * AS are separated by whitespace in the AS path.
+	 */
+	private static final CharMatcher INPUT_AS_SEPARATOR = CharMatcher.WHITESPACE.or(CURLY_BRACES).or(COMMA);
 
 	private AsPath() {
 		// Private constructor, not meant to be instantiated
@@ -91,34 +91,56 @@ public final class AsPath {
 
 			result.add(as);
 		}
-		return concat(result, AS_SEPARATOR);
+		return concat(result, OUTPUT_AS_SEPARATOR);
+	}
+
+	public static ValidationResult validate(String asPath) {
+		boolean attributePresent = true;
+		return validate(asPath, attributePresent);
 	}
 
 	/**
-	 * AS path must not be null or empty string. AS path must have at least 2
-	 * tokens; comprising of the ASPATH attribute and 1 AS. First token of the
-	 * AS path must match the ASPATH attribute name.
+	 * AS path must not be null or empty string. AS path must not be empty.
+	 * First token of the AS path must match the ASPATH attribute name if
+	 * present. AS must be a number.
 	 * 
 	 * @param asPath
 	 * @return
 	 */
-	public static ValidationResult validate(String asPath) {
+	public static ValidationResult validate(String asPath,
+			boolean attributePresent) {
 		List<String> errors = new ArrayList<String>();
 		if (Strings.isNullOrEmpty(asPath)) {
 			errors.add("AS path must not be null or an empty string");
-			return new ValidationResult(errors,  AsPath.class.getName(), asPath);
+			return new ValidationResult(errors, AsPath.class.getName(), asPath);
 		}
-		List<String> tokens = split(asPath, CharMatcher.WHITESPACE);
-		String token = tokens.get(0);
+		List<String> tokens = split(asPath, INPUT_AS_SEPARATOR);
+		if (tokens.isEmpty()) {
+			errors.add("AS path must contain at least 1 token");
+			return new ValidationResult(errors, AsPath.class.getName(), asPath);
+		}
 		int size = tokens.size();
-		if (size < ASPATH_MIN_NUMBER_OF_TOKENS) {
-			errors.add(concat("There must be at least ",
-					ASPATH_MIN_NUMBER_OF_TOKENS,
-					" tokens in the AS path, comprising of the ASPATH attribute and 1 AS"));
+		if (attributePresent && size == 1) {
+			errors.add("AS path must contain at least 1 AS");
+			return new ValidationResult(errors, AsPath.class.getName(), asPath);
 		}
-		if (!token.equals(ASPATH_ATTRIBUTE)) {
-			errors.add(concat("First token of AS path must be [",
-					ASPATH_ATTRIBUTE, "]"));
+		String token;
+		if (attributePresent) {
+			token = tokens.get(0);
+			if (!token.equals(ASPATH_ATTRIBUTE)) {
+				errors.add(concat(
+						"Attribute label is present, so first token of AS path must be [",
+						ASPATH_ATTRIBUTE, "]"));
+			}
+		}
+		for (int i = 1; i < size; i++) {
+			token = tokens.get(i);
+
+			// AS token is a number
+
+			if (!ASCII_DIGITS.matchesAllOf(token)) {
+				errors.add("AS must be a number");
+			}
 		}
 		return new ValidationResult(errors, AsPath.class.getName(), asPath);
 	}
