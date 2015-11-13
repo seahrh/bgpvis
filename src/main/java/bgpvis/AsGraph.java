@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
@@ -20,6 +21,7 @@ import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multiset;
 import com.google.common.collect.Table;
@@ -563,6 +565,260 @@ public final class AsGraph {
 	 */
 	private static String toString(String... as) {
 		return join(Arrays.asList(as), AS_SEPARATOR);
+	}
+
+	/**
+	 * Stub has no peers and cannot be a provider
+	 * @param as
+	 * @param relationships
+	 * @return
+	 */
+	public static boolean stub(String as,
+			Map<String, Map<String, String>> relationships) {
+		Map<String, String> edges = relationships.get(as);
+		String relationship;
+		for (Map.Entry<String, String> entry : edges.entrySet()) {
+			relationship = entry.getValue();
+			if (relationship.equals(PEER_TO_PEER)) {
+				return false;
+			}
+			if (relationship.equals(PROVIDER_TO_CUSTOMER)) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	/**
+	 * Returns a set of stubs from a relationship graph.
+	 * @param relationships
+	 * @return
+	 */
+	public static Set<String> stubs(
+			Map<String, Map<String, String>> relationships) {
+		Set<String> ret = new HashSet(relationships.size());
+		String as;
+		for (Map.Entry<String, Map<String, String>> entry : relationships.entrySet()) {
+			as = entry.getKey();
+			if (stub(as, relationships)) {
+				ret.add(as);
+			}
+		}
+		return ret;
+	}
+
+	/**
+	 * Remove stubs from a relationship graph.
+	 * @param relationships
+	 * @return
+	 */
+	public static Map<String, Map<String, String>> removeStubs(
+			Map<String, Map<String, String>> relationships) {
+		Map<String, Map<String, String>> ret = Maps.newHashMap(relationships);
+		String as;
+		for (Map.Entry<String, Map<String, String>> entry : relationships.entrySet()) {
+			as = entry.getKey();
+			if (stub(as, relationships)) {
+				ret.remove(as);
+			}
+		}
+		return ret;
+	}
+
+	/**
+	 * Regional ISPs have no peers and provide transit to stubs only.
+	 * @param as
+	 * @param relationships
+	 * @param stubs
+	 * @return
+	 */
+	public static boolean regionalIsp(String as,
+			Map<String, Map<String, String>> relationships, Set<String> stubs) {
+		Map<String, String> edges = relationships.get(as);
+		String neighbour;
+		String relationship;
+		for (Map.Entry<String, String> entry : edges.entrySet()) {
+			neighbour = entry.getKey();
+			relationship = entry.getValue();
+			if (relationship.equals(PEER_TO_PEER)) {
+				return false;
+			}
+			if (relationship.equals(PROVIDER_TO_CUSTOMER)
+					&& !stubs.contains(neighbour)) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	/**
+	 * Returns a set of regional ISPs from the relationship graph.
+	 * @param relationships
+	 * @param stubs
+	 * @return
+	 */
+	public static Set<String> regionalIsps(
+			Map<String, Map<String, String>> relationships, Set<String> stubs) {
+		Set<String> ret = new HashSet<>(relationships.size());
+		String as;
+		for (Map.Entry<String, Map<String, String>> entry : relationships.entrySet()) {
+			as = entry.getKey();
+			if (regionalIsp(as, relationships, stubs)) {
+				ret.add(as);
+			}
+		}
+		return ret;
+	}
+
+	/**
+	 * Removes regional ISPs from a relationship graph
+	 * @param relationships
+	 * @param stubs
+	 * @return
+	 */
+	public static Map<String, Map<String, String>> removeRegionalIsps(
+			Map<String, Map<String, String>> relationships, Set<String> stubs) {
+		Map<String, Map<String, String>> ret = Maps.newHashMap(relationships);
+		String as;
+		for (Map.Entry<String, Map<String, String>> entry : relationships.entrySet()) {
+			as = entry.getKey();
+			if (regionalIsp(as, relationships, stubs)) {
+				ret.remove(as);
+			}
+		}
+		return ret;
+	}
+
+	/**
+	 * Dense cores have no upstream providers
+	 * @param as
+	 * @param relationships
+	 * @return
+	 */
+	public static boolean denseCore(String as,
+			Map<String, Map<String, String>> relationships) {
+		Map<String, String> edges = relationships.get(as);
+		String relationship;
+		for (Map.Entry<String, String> entry : edges.entrySet()) {
+			relationship = entry.getValue();
+			if (relationship.equals(CUSTOMER_TO_PROVIDER)) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	/**
+	 * Returns a set of dense cores from a relationship graph
+	 * @param relationships
+	 * @return
+	 */
+	public static Set<String> denseCores(
+			Map<String, Map<String, String>> relationships) {
+		Set<String> ret = new HashSet<>(relationships.size());
+		String as;
+		for (Map.Entry<String, Map<String, String>> entry : relationships.entrySet()) {
+			as = entry.getKey();
+			if (denseCore(as, relationships)) {
+				ret.add(as);
+			}
+		}
+		return ret;
+	}
+
+	/**
+	 * Transit cores peer with dense cores and each other
+	 * @param as
+	 * @param relationships
+	 * @param denseCores
+	 * @return
+	 */
+	public static boolean transitCore(String as,
+			Map<String, Map<String, String>> relationships,
+			Set<String> denseCores) {
+		Map<String, String> edges = relationships.get(as);
+		if (edges == null) {
+			log.warn("Missing edges for AS [{}]", as);
+			return false;
+		}
+		Map<String, String> neighbourEdges;
+		String relationship;
+		String neighbour;
+		if (denseCores.contains(as)) {
+			return false;
+		}
+		
+		for (Map.Entry<String, String> entry : edges.entrySet()) {
+			neighbour = entry.getKey();
+			
+			relationship = entry.getValue();
+			if (relationship.equals(PEER_TO_PEER)) {
+				if (denseCores.contains(neighbour)) {
+					return true;
+				}
+				return transitCore(neighbour, relationships, denseCores);
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Returns a set of transit cores from the relationship graph
+	 * @param relationships
+	 * @param denseCores
+	 * @return
+	 */
+	public static Set<String> transitCores(
+			Map<String, Map<String, String>> relationships,
+			Set<String> denseCores) {
+		Set<String> ret = new HashSet<>(relationships.size());
+		String as;
+		for (Map.Entry<String, Map<String, String>> entry : relationships.entrySet()) {
+			as = entry.getKey();
+			if (transitCore(as, relationships, denseCores)) {
+				ret.add(as);
+			}
+		}
+		return ret;
+	}
+
+	/**
+	 * An outer core is a core that is neither a dense core or transit core.
+	 * @param as
+	 * @param denseCores
+	 * @param transitCores
+	 * @return
+	 */
+	public static boolean outerCore(String as, Set<String> denseCores,
+			Set<String> transitCores) {
+		if (denseCores.contains(as)) {
+			return false;
+		}
+		if (transitCores.contains(as)) {
+			return false;
+		}
+		return true;
+	}
+
+	/**
+	 * Returns a set of outer cores from the relationship graph.
+	 * @param relationships
+	 * @param denseCores
+	 * @param transitCores
+	 * @return
+	 */
+	public static Set<String> outerCores(
+			Map<String, Map<String, String>> relationships,
+			Set<String> denseCores, Set<String> transitCores) {
+		Set<String> ret = new HashSet<>(relationships.size());
+		String as;
+		for (Map.Entry<String, Map<String, String>> entry : relationships.entrySet()) {
+			as = entry.getKey();
+			if (outerCore(as, denseCores, transitCores)) {
+				ret.add(as);
+			}
+		}
+		return ret;
 	}
 
 }
