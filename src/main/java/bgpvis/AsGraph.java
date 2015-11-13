@@ -289,17 +289,22 @@ public final class AsGraph {
 		return result;
 	}
 	
-	public static Table<String, String, String> annotateRelationship(
+	public static Map<String, Map<String, String>> annotateRelationship(
 			List<String> asPaths, Multiset<String> transitCustomerToProvider,
 			int threshold) {
 		int size = asPaths.size();
-		Set<String> asSet = AsPath.asSet(asPaths);
-		Table<String, String, String> result = ArrayTable.create(asSet, asSet);
+		Map<String, Map<String, String>> result = new HashMap<>(size);
+		Map<String, String> row;
 		List<String[]> relationships;
 		for (String path : asPaths) {
 			relationships = annotateRelationship(path, transitCustomerToProvider, threshold);
 			for (String[] triplet : relationships) {
-				result.put(triplet[0], triplet[1], triplet[2]);
+				row = result.get(triplet[0]);
+				if (row == null) {
+					row = new HashMap<>();
+				}
+				row.put(triplet[1], triplet[2]);
+				result.put(triplet[0], row);
 			}
 		}
 		return result;

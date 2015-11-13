@@ -9,6 +9,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -18,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import bgpvis.util.MyFileWriter;
 import bgpvis.validation.ValidationResult;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multiset;
 import com.google.common.collect.Table;
@@ -89,7 +91,7 @@ public final class AsGraphAnnotator {
 			// Phase 3 of Task 3 Algorithm 1
 			// Assign relationships to AS pairs
 			
-			Table<String, String, String> relationships = AsGraph.annotateRelationship(asPaths, transitCustomerToProvider, TRANSIT_COUNT_THRESHOLD);
+			Map<String, Map<String, String>> relationships = AsGraph.annotateRelationship(asPaths, transitCustomerToProvider, TRANSIT_COUNT_THRESHOLD);
 			log.info("Annotate relationships: Done!");
 			
 			List<String> out = toString(relationships);
@@ -104,12 +106,20 @@ public final class AsGraphAnnotator {
 		log.info("Done! Run time: {}s\n", elapsedTime / 1000);
 	}
 	
-	private static List<String> toString(Table<String, String, String> relationships) {
+	private static List<String> toString(Map<String, Map<String, String>> relationships) {
 		List<String> ret = new ArrayList<String>(relationships.size());
-		String values[];
-		for (Cell<String, String, String> cell: relationships.cellSet()) {
-			values = new String[] {cell.getRowKey(), cell.getColumnKey(), cell.getValue()};
-		    ret.add(concat(values, " ")); 
+		List<String> values;
+		String as1, as2, relationship;
+		Map<String, String> temp;
+		for (Map.Entry<String, Map<String,String>> outer : relationships.entrySet()) {
+			as1 = outer.getKey();
+			temp = outer.getValue();
+			for (Map.Entry<String, String> inner : temp.entrySet()) {
+				as2 = inner.getKey();
+				relationship = inner.getValue();
+				values = Lists.newArrayList(as1, as2, relationship);
+			    ret.add(concat(values, " ")); 
+			}
 		}
 		return ret;
 	}
