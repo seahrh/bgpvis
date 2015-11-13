@@ -81,7 +81,7 @@ public final class AsGraphAnnotator {
 			// Count the number of entries that infer an AS pair having a
 			// transit relationship
 
-			Multiset<String> transitCustomerToProvider = AsGraph.transitCustomerToProvider(
+			Multiset<String> transitCustomerToProvider = AsGraph.countTransitRelationship(
 					asPaths, nodeDegreeByAs);
 			log.info("Count transit relationships: Done!");
 
@@ -117,6 +117,11 @@ public final class AsGraphAnnotator {
 		log.info("Done! Run time: {}s\n", elapsedTime / 1000);
 	}
 
+	/**
+	 * Output relationships in required format
+	 * @param relationships
+	 * @return
+	 */
 	private static List<String> toString(
 			Map<String, Map<String, String>> relationships) {
 		List<String> ret = new ArrayList<String>(relationships.size());

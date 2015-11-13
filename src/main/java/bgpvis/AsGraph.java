@@ -68,6 +68,12 @@ public final class AsGraph {
 		return neighbours;
 	}
 
+	/**
+	 * Map AS to its node degree.
+	 * 
+	 * @param neighbours
+	 * @return
+	 */
 	public static Map<String, Integer> nodeDegreeByAs(
 			Multimap<String, String> neighbours) {
 		Map<String, Collection<String>> neighboursMap = neighbours.asMap();
@@ -86,7 +92,9 @@ public final class AsGraph {
 	}
 
 	/**
-	 * Index AS by node degree (number of adjacent neighbours)
+	 * Map node degree (number of adjacent neighbours) to ASes that have the
+	 * same node degree. Data structure allows for easy sorting of ASes by node
+	 * degree.
 	 * 
 	 * @param neighbours
 	 * @return
@@ -139,6 +147,13 @@ public final class AsGraph {
 		return result;
 	}
 
+	/**
+	 * Index of top provider in an AS path.
+	 * 
+	 * @param asPath
+	 * @param nodeDegreeByAs
+	 * @return
+	 */
 	public static int indexOfTopProvider(String asPath,
 			Map<String, Integer> nodeDegreeByAs) {
 		int j = -1;
@@ -163,6 +178,8 @@ public final class AsGraph {
 	}
 
 	/**
+	 * Map of customers to its transit providers.
+	 * <p>
 	 * Key: a given AS
 	 * <p>
 	 * Value: collection of transit providers that serve this AS
@@ -192,6 +209,18 @@ public final class AsGraph {
 		return providers;
 	}
 
+	/**
+	 * Map of customers to its transit providers.
+	 * <p>
+	 * Key: a given AS
+	 * <p>
+	 * Value: collection of transit providers that serve this AS
+	 * <p>
+	 * 
+	 * @param asPaths
+	 * @param nodeDegreeByAs
+	 * @return
+	 */
 	public static Multimap<String, String> transitProvidersByCustomer(
 			List<String> asPaths, Map<String, Integer> nodeDegreeByAs) {
 		Multimap<String, String> providers = HashMultimap.create();
@@ -201,7 +230,19 @@ public final class AsGraph {
 		return providers;
 	}
 
-	public static Multiset<String> transitCustomerToProvider(String asPath,
+	/**
+	 * Count customer-to-provider transit relationships
+	 * <p>
+	 * Key: a given customer-to-provider transit relationship
+	 * <p>
+	 * Value: Number of occurrences of this transit relationship
+	 * <p>
+	 * 
+	 * @param asPath
+	 * @param nodeDegreeByAs
+	 * @return
+	 */
+	public static Multiset<String> countTransitRelationship(String asPath,
 			Map<String, Integer> nodeDegreeByAs) {
 		List<String> asList = AsPath.asList(asPath);
 		String curr;
@@ -221,15 +262,36 @@ public final class AsGraph {
 		return result;
 	}
 
-	public static Multiset<String> transitCustomerToProvider(
+	/**
+	 * Count customer-to-provider transit relationships
+	 * <p>
+	 * Key: a given customer-to-provider transit relationship
+	 * <p>
+	 * Value: Number of occurrences of this transit relationship
+	 * <p>
+	 * 
+	 * @param asPaths
+	 * @param nodeDegreeByAs
+	 * @return
+	 */
+	public static Multiset<String> countTransitRelationship(
 			List<String> asPaths, Map<String, Integer> nodeDegreeByAs) {
 		Multiset<String> result = HashMultiset.create(nodeDegreeByAs.size());
 		for (String path : asPaths) {
-			result.addAll(transitCustomerToProvider(path, nodeDegreeByAs));
+			result.addAll(countTransitRelationship(path, nodeDegreeByAs));
 		}
 		return result;
 	}
 
+	/**
+	 * Assign sibling-to-sibling, customer-to-provider, or provider-to-customer
+	 * relationships. Based on Task 3 Algorithm 1 Phase 3.
+	 * 
+	 * @param asPath
+	 * @param transitCustomerToProvider
+	 * @param threshold
+	 * @return
+	 */
 	public static List<String[]> relationships(String asPath,
 			Multiset<String> transitCustomerToProvider, int threshold) {
 		List<String> asList = AsPath.asList(asPath);
@@ -293,6 +355,15 @@ public final class AsGraph {
 		return result;
 	}
 
+	/**
+	 * Assign sibling-to-sibling, customer-to-provider, or provider-to-customer
+	 * relationships. Based on Task 3 Algorithm 1 Phase 3.
+	 * 
+	 * @param asPaths
+	 * @param transitCustomerToProvider
+	 * @param threshold
+	 * @return
+	 */
 	public static Map<String, Map<String, String>> relationships(
 			List<String> asPaths, Multiset<String> transitCustomerToProvider,
 			int threshold) {
@@ -301,8 +372,8 @@ public final class AsGraph {
 		Map<String, String> row;
 		List<String[]> relationships;
 		for (String path : asPaths) {
-			relationships = relationships(path,
-					transitCustomerToProvider, threshold);
+			relationships = relationships(path, transitCustomerToProvider,
+					threshold);
 			for (String[] triplet : relationships) {
 				row = result.get(triplet[0]);
 				if (row == null) {
@@ -315,6 +386,14 @@ public final class AsGraph {
 		return result;
 	}
 
+	/**
+	 * Mark AS pair edges as non-peering. Based on Task 3 Algorithm 2 Phase 2.
+	 * 
+	 * @param asPath
+	 * @param nodeDegreeByAs
+	 * @param relationships
+	 * @return
+	 */
 	public static Multimap<String, String> nonPeers(String asPath,
 			Map<String, Integer> nodeDegreeByAs,
 			Map<String, Map<String, String>> relationships) {
@@ -384,6 +463,14 @@ public final class AsGraph {
 		return ret;
 	}
 
+	/**
+	 * Mark AS pair edges as non-peering. Based on Task 3 Algorithm 2 Phase 2.
+	 * 
+	 * @param asPaths
+	 * @param nodeDegreeByAs
+	 * @param relationships
+	 * @return
+	 */
 	public static Multimap<String, String> nonPeers(List<String> asPaths,
 			Map<String, Integer> nodeDegreeByAs,
 			Map<String, Map<String, String>> relationships) {
@@ -394,6 +481,16 @@ public final class AsGraph {
 		return ret;
 	}
 
+	/**
+	 * Assign peer-to-peer relationships to AS pair edges. Based on Task 3
+	 * Algorithm 2 Phase 3.
+	 * 
+	 * @param asPath
+	 * @param nodeDegreeByAs
+	 * @param relationships
+	 * @param nonPeers
+	 * @param degreeSizeRatio
+	 */
 	public static void peeringRelationships(String asPath,
 			Map<String, Integer> nodeDegreeByAs,
 			Map<String, Map<String, String>> relationships,
@@ -437,16 +534,33 @@ public final class AsGraph {
 		}
 	}
 
+	/**
+	 * Assign peer-to-peer relationships to AS pair edges. Based on Task 3
+	 * Algorithm 2 Phase 3.
+	 * 
+	 * @param asPaths
+	 * @param nodeDegreeByAs
+	 * @param relationships
+	 * @param nonPeers
+	 * @param degreeSizeRatio
+	 */
 	public static void peeringRelationships(List<String> asPaths,
 			Map<String, Integer> nodeDegreeByAs,
 			Map<String, Map<String, String>> relationships,
 			Multimap<String, String> nonPeers, double degreeSizeRatio) {
 		for (String path : asPaths) {
-			peeringRelationships(path, nodeDegreeByAs, relationships,
-					nonPeers, degreeSizeRatio);
+			peeringRelationships(path, nodeDegreeByAs, relationships, nonPeers,
+					degreeSizeRatio);
 		}
 	}
 
+	/**
+	 * Returns a string representation of a list of ASes. Usually used to name a
+	 * relationship edge (AS pair).
+	 * 
+	 * @param as
+	 * @return
+	 */
 	private static String toString(String... as) {
 		return join(Arrays.asList(as), AS_SEPARATOR);
 	}
