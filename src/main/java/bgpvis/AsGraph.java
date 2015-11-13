@@ -230,9 +230,8 @@ public final class AsGraph {
 		return result;
 	}
 
-	public static List<String[]> annotateRelationship(
-			String asPath, Multiset<String> transitCustomerToProvider,
-			int threshold) {
+	public static List<String[]> relationships(String asPath,
+			Multiset<String> transitCustomerToProvider, int threshold) {
 		List<String> asList = AsPath.asList(asPath);
 		int size = asList.size();
 		List<String[]> result = new ArrayList<String[]>(size);
@@ -249,15 +248,16 @@ public final class AsGraph {
 			nextServedByCurr = transitCustomerToProvider.count(pair1);
 			pair2 = toString(curr, next);
 			currServedByNext = transitCustomerToProvider.count(pair2);
-			log.debug("({}): {}, ({}): {}", pair1, nextServedByCurr, pair2, currServedByNext);
+			log.debug("({}): {}, ({}): {}", pair1, nextServedByCurr, pair2,
+					currServedByNext);
 
 			// If both ASes are greater than threshold L,
 			// mark the edge as sibling
 
 			if (nextServedByCurr > threshold && currServedByNext > threshold) {
-				triplet = new String[]{curr, next, SIBLING_TO_SIBLING};
+				triplet = new String[] { curr, next, SIBLING_TO_SIBLING };
 				result.add(triplet);
-				triplet = new String[]{next, curr, SIBLING_TO_SIBLING};
+				triplet = new String[] { next, curr, SIBLING_TO_SIBLING };
 				result.add(triplet);
 				continue;
 			}
@@ -267,33 +267,33 @@ public final class AsGraph {
 
 			if (currServedByNext <= threshold && currServedByNext > 0
 					&& nextServedByCurr <= threshold && nextServedByCurr > 0) {
-				triplet = new String[]{curr, next, SIBLING_TO_SIBLING};
+				triplet = new String[] { curr, next, SIBLING_TO_SIBLING };
 				result.add(triplet);
-				triplet = new String[]{next, curr, SIBLING_TO_SIBLING};
+				triplet = new String[] { next, curr, SIBLING_TO_SIBLING };
 				result.add(triplet);
 				continue;
 			}
-			
+
 			if (nextServedByCurr > threshold || currServedByNext == 0) {
-				triplet = new String[]{curr, next, PROVIDER_TO_CUSTOMER};
+				triplet = new String[] { curr, next, PROVIDER_TO_CUSTOMER };
 				result.add(triplet);
-				triplet = new String[]{next, curr, CUSTOMER_TO_PROVIDER};
+				triplet = new String[] { next, curr, CUSTOMER_TO_PROVIDER };
 				result.add(triplet);
 				continue;
 			}
-			
+
 			if (currServedByNext > threshold || nextServedByCurr == 0) {
-				triplet = new String[]{next, curr, PROVIDER_TO_CUSTOMER};
+				triplet = new String[] { next, curr, PROVIDER_TO_CUSTOMER };
 				result.add(triplet);
-				triplet = new String[]{curr, next, CUSTOMER_TO_PROVIDER};
+				triplet = new String[] { curr, next, CUSTOMER_TO_PROVIDER };
 				result.add(triplet);
 				continue;
 			}
 		}
 		return result;
 	}
-	
-	public static Map<String, Map<String, String>> annotateRelationship(
+
+	public static Map<String, Map<String, String>> relationships(
 			List<String> asPaths, Multiset<String> transitCustomerToProvider,
 			int threshold) {
 		int size = asPaths.size();
@@ -301,7 +301,8 @@ public final class AsGraph {
 		Map<String, String> row;
 		List<String[]> relationships;
 		for (String path : asPaths) {
-			relationships = annotateRelationship(path, transitCustomerToProvider, threshold);
+			relationships = relationships(path,
+					transitCustomerToProvider, threshold);
 			for (String[] triplet : relationships) {
 				row = result.get(triplet[0]);
 				if (row == null) {
@@ -314,7 +315,139 @@ public final class AsGraph {
 		return result;
 	}
 
-	public static String toString(String... as) {
+	public static Multimap<String, String> nonPeers(String asPath,
+			Map<String, Integer> nodeDegreeByAs,
+			Map<String, Map<String, String>> relationships) {
+		Multimap<String, String> ret = HashMultimap.create();
+		List<String> asList = AsPath.asList(asPath);
+		String curr;
+		String next;
+		int size = asList.size();
+		int j = indexOfTopProvider(asPath, nodeDegreeByAs);
+		for (int i = 0; i < size - 1; i++) {
+			curr = asList.get(i);
+			next = asList.get(i + 1);
+			if (i < j - 1) {
+				ret.put(curr, next);
+				continue;
+			}
+			if (i > j) {
+				ret.put(curr, next);
+				continue;
+			}
+		}
+		if (j - 1 >= 0 && j + 1 < size) {
+			boolean hasLeftSibling = false;
+			boolean hasRightSibling = false;
+			String topProvider = asList.get(j);
+			String prev = asList.get(j - 1);
+			next = asList.get(j + 1);
+			Map<String, String> temp;
+			temp = relationships.get(prev);
+			if (temp == null) {
+				throw new IllegalArgumentException(concat(
+						"Missing relationship for AS: ", prev));
+			}
+			if (temp.get(topProvider)
+				.equals(SIBLING_TO_SIBLING)) {
+				hasLeftSibling = false;
+			}
+			temp = relationships.get(topProvider);
+			if (temp == null) {
+				throw new IllegalArgumentException(concat(
+						"Missing relationship for AS: ", topProvider));
+			}
+			if (temp.get(next)
+				.equals(SIBLING_TO_SIBLING)) {
+				hasRightSibling = true;
+			}
+			if (!hasLeftSibling && !hasRightSibling) {
+				Integer prevDegree = nodeDegreeByAs.get(prev);
+				if (prevDegree == null) {
+					throw new IllegalArgumentException(concat(
+							"Missing node degree for AS before top provider: ",
+							prev));
+				}
+				Integer nextDegree = nodeDegreeByAs.get(next);
+				if (nextDegree == null) {
+					throw new IllegalArgumentException(concat(
+							"Missing node degree for AS after top provider: ",
+							next));
+				}
+				if (prevDegree > nextDegree) {
+					ret.put(topProvider, next);
+				} else {
+					ret.put(prev, topProvider);
+				}
+			}
+		}
+		return ret;
+	}
+
+	public static Multimap<String, String> nonPeers(List<String> asPaths,
+			Map<String, Integer> nodeDegreeByAs,
+			Map<String, Map<String, String>> relationships) {
+		Multimap<String, String> ret = HashMultimap.create();
+		for (String path : asPaths) {
+			ret.putAll(nonPeers(path, nodeDegreeByAs, relationships));
+		}
+		return ret;
+	}
+
+	public static void peeringRelationships(String asPath,
+			Map<String, Integer> nodeDegreeByAs,
+			Map<String, Map<String, String>> relationships,
+			Multimap<String, String> nonPeers, double degreeSizeRatio) {
+		List<String> asList = AsPath.asList(asPath);
+		int size = asList.size();
+		String curr;
+		String next;
+		Integer currDegree;
+		Integer nextDegree;
+		double ratio;
+		Map<String, String> temp;
+		for (int i = 0; i < size - 1; i++) {
+			curr = asList.get(i);
+			next = asList.get(i + 1);
+			currDegree = nodeDegreeByAs.get(curr);
+			if (currDegree == null) {
+				throw new IllegalArgumentException(concat(
+						"Missing node degree for current AS: ", curr));
+			}
+			nextDegree = nodeDegreeByAs.get(next);
+			if (nextDegree == null) {
+				throw new IllegalArgumentException(concat(
+						"Missing node degree for next AS: ", next));
+			}
+			ratio = currDegree / nextDegree;
+
+			// Both curr and next ASes are non-peering in both directions,
+			// and degree size ratio does not exceed threshold
+
+			if (!nonPeers.containsEntry(curr, next)
+					&& !nonPeers.containsEntry(next, curr)
+					&& ratio < degreeSizeRatio && ratio > (1 / degreeSizeRatio)) {
+				temp = relationships.get(curr);
+				if (temp == null) {
+					temp = new HashMap<>();
+				}
+				temp.put(next, PEER_TO_PEER);
+				relationships.put(curr, temp);
+			}
+		}
+	}
+
+	public static void peeringRelationships(List<String> asPaths,
+			Map<String, Integer> nodeDegreeByAs,
+			Map<String, Map<String, String>> relationships,
+			Multimap<String, String> nonPeers, double degreeSizeRatio) {
+		for (String path : asPaths) {
+			peeringRelationships(path, nodeDegreeByAs, relationships,
+					nonPeers, degreeSizeRatio);
+		}
+	}
+
+	private static String toString(String... as) {
 		return join(Arrays.asList(as), AS_SEPARATOR);
 	}
 

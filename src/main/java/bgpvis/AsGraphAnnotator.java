@@ -26,7 +26,7 @@ public final class AsGraphAnnotator {
 	private static final Logger log = LoggerFactory.getLogger(AsGraphAnnotator.class);
 	private static final String IN_FILE_PATH = System.getProperty("bgp.in.file");
 	private static final String OUT_FILE_PATH = System.getProperty("bgp.out.file");
-	private static final int DEGREE_SIZE_RATIO = Integer.parseInt(System.getProperty("bgp.in.degree-size-ratio"));
+	private static final double DEGREE_SIZE_RATIO = Double.parseDouble(System.getProperty("bgp.in.degree-size-ratio"));
 	private static final int TRANSIT_COUNT_THRESHOLD = Integer.parseInt(System.getProperty("bgp.in.transit-count-threshold"));
 
 	/**
@@ -87,10 +87,24 @@ public final class AsGraphAnnotator {
 
 			// Phase 3 of Task 3 Algorithm 1
 			// Assign relationships to AS pairs
-			
-			Map<String, Map<String, String>> relationships = AsGraph.annotateRelationship(asPaths, transitCustomerToProvider, TRANSIT_COUNT_THRESHOLD);
+
+			Map<String, Map<String, String>> relationships = AsGraph.relationships(
+					asPaths, transitCustomerToProvider, TRANSIT_COUNT_THRESHOLD);
 			log.info("Annotate relationships: Done!");
+
+			// Phase 2 of Task 3 Algorithm 2
+			// Identify AS pairs that cannot have a peering relationship
+
+			Multimap<String, String> nonPeers = AsGraph.nonPeers(asPaths,
+					nodeDegreeByAs, relationships);
+			log.info("Non-peers: Done!");
 			
+			// Phase 3 of Task 3 Algorithm 2
+			// Assign peering relationships to AS pairs
+			
+			AsGraph.peeringRelationships(asPaths, nodeDegreeByAs, relationships, nonPeers, DEGREE_SIZE_RATIO);
+			log.info("Assign peering relationships: Done!");
+
 			List<String> out = toString(relationships);
 			file = MyFileWriter.write(out, OUT_FILE_PATH);
 			log.info("Saved {}", file.getAbsolutePath());
@@ -102,20 +116,21 @@ public final class AsGraphAnnotator {
 		long elapsedTime = System.currentTimeMillis() - startTime;
 		log.info("Done! Run time: {}s\n", elapsedTime / 1000);
 	}
-	
-	private static List<String> toString(Map<String, Map<String, String>> relationships) {
+
+	private static List<String> toString(
+			Map<String, Map<String, String>> relationships) {
 		List<String> ret = new ArrayList<String>(relationships.size());
 		List<String> values;
 		String as1, as2, relationship;
 		Map<String, String> temp;
-		for (Map.Entry<String, Map<String,String>> outer : relationships.entrySet()) {
+		for (Map.Entry<String, Map<String, String>> outer : relationships.entrySet()) {
 			as1 = outer.getKey();
 			temp = outer.getValue();
 			for (Map.Entry<String, String> inner : temp.entrySet()) {
 				as2 = inner.getKey();
 				relationship = inner.getValue();
 				values = Lists.newArrayList(as1, as2, relationship);
-			    ret.add(join(values, " ")); 
+				ret.add(join(values, " "));
 			}
 		}
 		return ret;
