@@ -1,34 +1,53 @@
 package bgpvis;
 
 import static bgpvis.util.StringUtil.*;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.ArrayTable;
+import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.Multiset;
+import com.google.common.collect.Table;
 import com.google.common.collect.TreeMultimap;
 
 public final class AsGraph {
 	private static final Logger log = LoggerFactory.getLogger(AsGraph.class);
+	private static final String AS_SEPARATOR = ",";
+	private static final String SIBLING_TO_SIBLING = "s2s";
+	private static final String PEER_TO_PEER = "p2p";
+	private static final String CUSTOMER_TO_PROVIDER = "c2p";
+	private static final String PROVIDER_TO_CUSTOMER = "p2c";
 
 	private AsGraph() {
 		// Private constructor, not meant to be instantiated
 	}
 
 	/**
-	 * Get neighbours of every AS
-	 * Adapetd from Phase 1 of Algorithm 1 (AS Graph Annotation)
+	 * Get the adjacent neighbours of every AS
+	 * <p>
+	 * Key: a given AS
+	 * <p>
+	 * Value: collection of neighbours of this AS
+	 * <p>
+	 * Based on Phase 1 of Algorithm 1 (AS Graph Annotation)
+	 * 
 	 * @param asPaths
 	 * @return
 	 */
-	public static Multimap<String, String> neighbours(List<String> asPaths) {
+	public static Multimap<String, String> neighboursByAs(List<String> asPaths) {
 		Multimap<String, String> neighbours = HashMultimap.create();
 		List<String> asList;
 		String curr;
@@ -117,8 +136,9 @@ public final class AsGraph {
 		}
 		return result;
 	}
-	
-	public static int indexOfTopProvider(String asPath, Map<String, Integer> nodeDegreeByAs) {
+
+	public static int indexOfTopProvider(String asPath,
+			Map<String, Integer> nodeDegreeByAs) {
 		int j = -1;
 		List<String> asList = AsPath.asList(asPath);
 		int size = asList.size();
@@ -129,7 +149,8 @@ public final class AsGraph {
 			as = asList.get(i);
 			degree = nodeDegreeByAs.get(as);
 			if (degree == null) {
-				throw new IllegalArgumentException(concat("Missing node degree for AS [", as, "]"));
+				throw new IllegalArgumentException(concat(
+						"Missing node degree for AS [", as, "]"));
 			}
 			if (degree > max) {
 				max = degree;
@@ -138,14 +159,19 @@ public final class AsGraph {
 		}
 		return j;
 	}
-	
+
 	/**
-	 * Adapetd from Phase 2 of Algorithm 1 (AS Graph Annotation)
+	 * Key: a given AS
+	 * <p>
+	 * Value: collection of transit providers that serve this AS
+	 * <p>
+	 * 
 	 * @param asPath
 	 * @param nodeDegreeByAs
 	 * @return
 	 */
-	public static Multimap<String, String> transitProviders(String asPath, Map<String, Integer> nodeDegreeByAs) {
+	public static Multimap<String, String> transitProvidersByCustomer(
+			String asPath, Map<String, Integer> nodeDegreeByAs) {
 		Multimap<String, String> providers = HashMultimap.create();
 		List<String> asList = AsPath.asList(asPath);
 		String curr;
@@ -156,24 +182,131 @@ public final class AsGraph {
 			curr = asList.get(i);
 			next = asList.get(i + 1);
 			if (i < j) {
-				providers.put(next, curr);
+				providers.put(curr, next);
 				continue;
 			}
-			providers.put(curr, next);
+			providers.put(next, curr);
 		}
 		return providers;
 	}
-	
-	public static Multimap<String, String> transitProviders(List<String> asPaths, Map<String, Integer> nodeDegreeByAs) {
+
+	public static Multimap<String, String> transitProvidersByCustomer(
+			List<String> asPaths, Map<String, Integer> nodeDegreeByAs) {
 		Multimap<String, String> providers = HashMultimap.create();
 		for (String path : asPaths) {
-			providers.putAll(transitProviders(path, nodeDegreeByAs));
+			providers.putAll(transitProvidersByCustomer(path, nodeDegreeByAs));
 		}
 		return providers;
 	}
+
+	public static Multiset<String> transitCustomerToProvider(String asPath,
+			Map<String, Integer> nodeDegreeByAs) {
+		List<String> asList = AsPath.asList(asPath);
+		String curr;
+		String next;
+		int size = asList.size();
+		int j = indexOfTopProvider(asPath, nodeDegreeByAs);
+		Multiset<String> result = HashMultiset.create(nodeDegreeByAs.size());
+		for (int i = 0; i < size - 1; i++) {
+			curr = asList.get(i);
+			next = asList.get(i + 1);
+			if (i < j) {
+				result.add(toString(curr, next));
+				continue;
+			}
+			result.add(toString(next, curr));
+		}
+		return result;
+	}
+
+	public static Multiset<String> transitCustomerToProvider(
+			List<String> asPaths, Map<String, Integer> nodeDegreeByAs) {
+		Multiset<String> result = HashMultiset.create(nodeDegreeByAs.size());
+		for (String path : asPaths) {
+			result.addAll(transitCustomerToProvider(path, nodeDegreeByAs));
+		}
+		return result;
+	}
+
+	public static List<String[]> annotateRelationship(
+			String asPath, Multiset<String> transitCustomerToProvider,
+			int threshold) {
+		List<String> asList = AsPath.asList(asPath);
+		int size = asList.size();
+		List<String[]> result = new ArrayList<String[]>(size);
+		String triplet[];
+		String curr;
+		String next;
+		int nextServedByCurr;
+		int currServedByNext;
+		for (int i = 0; i < size - 1; i++) {
+			curr = asList.get(i);
+			next = asList.get(i + 1);
+			nextServedByCurr = transitCustomerToProvider.count(toString(next,
+					curr));
+			currServedByNext = transitCustomerToProvider.count(toString(curr,
+					next));
+
+			// If both ASes are greater than threshold L,
+			// mark the edge as sibling
+
+			if (nextServedByCurr > threshold && currServedByNext > threshold) {
+				triplet = new String[]{curr, next, SIBLING_TO_SIBLING};
+				result.add(triplet);
+				triplet = new String[]{next, curr, SIBLING_TO_SIBLING};
+				result.add(triplet);
+				continue;
+			}
+
+			// If both ASes are less than threshold L and greater than zero,
+			// mark the edge as sibling
+
+			if (currServedByNext <= threshold && currServedByNext > 0
+					&& nextServedByCurr <= threshold && nextServedByCurr > 0) {
+				triplet = new String[]{curr, next, SIBLING_TO_SIBLING};
+				result.add(triplet);
+				triplet = new String[]{next, curr, SIBLING_TO_SIBLING};
+				result.add(triplet);
+				continue;
+			}
+			
+			if (nextServedByCurr > threshold || currServedByNext == 0) {
+				triplet = new String[]{curr, next, PROVIDER_TO_CUSTOMER};
+				result.add(triplet);
+				triplet = new String[]{next, curr, CUSTOMER_TO_PROVIDER};
+				result.add(triplet);
+				continue;
+			}
+			
+			if (currServedByNext > threshold || nextServedByCurr == 0) {
+				triplet = new String[]{next, curr, PROVIDER_TO_CUSTOMER};
+				result.add(triplet);
+				triplet = new String[]{curr, next, CUSTOMER_TO_PROVIDER};
+				result.add(triplet);
+				continue;
+			}
+		}
+		return result;
+	}
 	
-	public static void annotateRelationship() {
-		
+	public static Table<String, String, String> annotateRelationship(
+			List<String> asPaths, Multiset<String> transitCustomerToProvider,
+			int threshold) {
+		int size = asPaths.size();
+		Set<String> asSet = AsPath.asSet(asPaths);
+		Table<String, String, String> result = ArrayTable.create(asSet, asSet);
+		List<String[]> relationships;
+		for (String path : asPaths) {
+			relationships = annotateRelationship(path, transitCustomerToProvider, threshold);
+			for (String[] triplet : relationships) {
+				result.put(triplet[0], triplet[1], triplet[2]);
+			}
+		}
+		return result;
+	}
+
+	public static String toString(String... as) {
+		return concat(as, AS_SEPARATOR);
 	}
 
 }

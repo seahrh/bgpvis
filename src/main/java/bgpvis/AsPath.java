@@ -69,6 +69,15 @@ public final class AsPath {
 	public static Set<String> asSet(String asPath) {
 		return new HashSet<String>(split(asPath, CharMatcher.WHITESPACE));
 	}
+	
+	public static Set<String> asSet(List<String> asPaths) {
+		int size = asPaths.size();
+		Set<String> ret = new HashSet<String>(size);
+		for (String path : asPaths) {
+			ret.addAll(asSet(path));
+		}
+		return ret;
+	}
 
 	/**
 	 * Compresses AS prepending by removing duplicate ASes that appear in

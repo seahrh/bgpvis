@@ -65,7 +65,7 @@ public final class NodeDegreeRanker {
 			
 			// Get neighbours of each AS
 			
-			Multimap<String, String> neighbours = AsGraph.neighbours(asPaths);
+			Multimap<String, String> neighbours = AsGraph.neighboursByAs(asPaths);
 			
 			// Index AS by node degree (number of adjacent neighbours)
 			
