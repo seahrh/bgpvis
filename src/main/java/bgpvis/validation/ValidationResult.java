@@ -53,7 +53,7 @@ public class ValidationResult {
 		msg.add(concat(inputName, " validation errors"));
 		msg.addAll(errors);
 		msg.add(concat("Input value [", inputValue, "]"));
-		return concat(msg, ERROR_MESSAGE_SEPARATOR);
+		return join(msg, ERROR_MESSAGE_SEPARATOR);
 	}
 
 }

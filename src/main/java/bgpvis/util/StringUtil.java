@@ -58,12 +58,12 @@ public final class StringUtil {
 		return sb.toString();
 	}
 	
-	public static String concat(Iterable<?> parts, String separator) {
+	public static String join(Iterable<?> parts, String separator) {
 		boolean skipNulls = true;
-		return concat(parts, separator, skipNulls);
+		return join(parts, separator, skipNulls);
 	}
 	
-	public static String concat(Iterable<?> parts, String separator, boolean skipNulls) {
+	public static String join(Iterable<?> parts, String separator, boolean skipNulls) {
 		Joiner j = Joiner.on(separator);
 		if (skipNulls) {
 			j.skipNulls();

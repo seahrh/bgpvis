@@ -1,7 +1,7 @@
 package bgpvis;
 
 import static bgpvis.AsPath.validate;
-import static bgpvis.util.StringUtil.concat;
+import static bgpvis.util.StringUtil.join;
 import static bgpvis.util.StringUtil.trim;
 
 import java.io.BufferedReader;
@@ -9,7 +9,6 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -22,8 +21,6 @@ import bgpvis.validation.ValidationResult;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multiset;
-import com.google.common.collect.Table;
-import com.google.common.collect.Table.Cell;
 
 public final class AsGraphAnnotator {
 	private static final Logger log = LoggerFactory.getLogger(AsGraphAnnotator.class);
@@ -118,7 +115,7 @@ public final class AsGraphAnnotator {
 				as2 = inner.getKey();
 				relationship = inner.getValue();
 				values = Lists.newArrayList(as1, as2, relationship);
-			    ret.add(concat(values, " ")); 
+			    ret.add(join(values, " ")); 
 			}
 		}
 		return ret;

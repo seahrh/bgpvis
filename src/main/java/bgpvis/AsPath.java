@@ -104,7 +104,7 @@ public final class AsPath {
 
 			result.add(as);
 		}
-		return concat(result, OUTPUT_AS_SEPARATOR);
+		return join(result, OUTPUT_AS_SEPARATOR);
 	}
 
 	public static ValidationResult validate(String asPath) {

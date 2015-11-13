@@ -21,7 +21,7 @@ public final class MyFileWriter {
 
 	public static File write(List<String> lines, String filePath)
 			throws IOException {
-		String content = concat(lines, "\n");
+		String content = join(lines, "\n");
 		return write(content, filePath);
 	}
 

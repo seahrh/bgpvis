@@ -3,6 +3,7 @@ package bgpvis;
 import static bgpvis.util.StringUtil.*;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Hashtable;
@@ -18,6 +19,7 @@ import com.google.common.collect.ArrayTable;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.HashMultiset;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multiset;
 import com.google.common.collect.Table;
@@ -25,7 +27,7 @@ import com.google.common.collect.TreeMultimap;
 
 public final class AsGraph {
 	private static final Logger log = LoggerFactory.getLogger(AsGraph.class);
-	private static final String AS_SEPARATOR = ",";
+	private static final String AS_SEPARATOR = " ";
 	private static final String SIBLING_TO_SIBLING = "s2s";
 	private static final String PEER_TO_PEER = "p2p";
 	private static final String CUSTOMER_TO_PROVIDER = "c2p";
@@ -237,15 +239,17 @@ public final class AsGraph {
 		String triplet[];
 		String curr;
 		String next;
+		String pair1, pair2;
 		int nextServedByCurr;
 		int currServedByNext;
 		for (int i = 0; i < size - 1; i++) {
 			curr = asList.get(i);
 			next = asList.get(i + 1);
-			nextServedByCurr = transitCustomerToProvider.count(toString(next,
-					curr));
-			currServedByNext = transitCustomerToProvider.count(toString(curr,
-					next));
+			pair1 = toString(next, curr);
+			nextServedByCurr = transitCustomerToProvider.count(pair1);
+			pair2 = toString(curr, next);
+			currServedByNext = transitCustomerToProvider.count(pair2);
+			log.debug("({}): {}, ({}): {}", pair1, nextServedByCurr, pair2, currServedByNext);
 
 			// If both ASes are greater than threshold L,
 			// mark the edge as sibling
@@ -311,7 +315,7 @@ public final class AsGraph {
 	}
 
 	public static String toString(String... as) {
-		return concat(as, AS_SEPARATOR);
+		return join(Arrays.asList(as), AS_SEPARATOR);
 	}
 
 }
