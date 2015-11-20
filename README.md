@@ -13,6 +13,15 @@ L. Subramanian, S. Agarwal, J. Rexford, and R. H. Katz. Characterizing the inter
 * Duplicate ASes and AS paths are removed with java.util.HashSet.
 * See bgpvis.etl.BgpPreprocessor.java, bgpvis.AsPath
 
+## Run Instructions
+
+Run bgpvis.etl.BgpPreprocessor.java with the following VM arguments:
+```
+-Xms2048m
+-Dbgp.in.file="path/to/file"
+-Dbgp.out.file="path/to/file"
+```
+
 # Task 2
 
 * Get the neighbours of each AS, then count the neighbours (node degree).
