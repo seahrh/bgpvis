@@ -28,6 +28,14 @@ Run bgpvis.etl.BgpPreprocessor.java with the following VM arguments:
 * Insert node degree and a set of ASes that share the same node degree into a java.util.TreeMap, so that the ASes can be sorted by the key (node degree). 
 * Sort the TreeMap in descending node degree and get the top k ASes.
 * See bgpvis.NodeDegreeRanker, bgpvis.AsPath, bgpvis.AsGraph
+ 
+Run bgpvis.NodeDegreeRanker.java with the following VM arguments:
+```
+-Xms2048m
+-Dbgp.in.file="path/to/file"
+-Dbgp.in.top-k="10"
+-Dbgp.out.file="path/to/file"
+```
 
 # Task 3
 
@@ -36,9 +44,25 @@ Run bgpvis.etl.BgpPreprocessor.java with the following VM arguments:
 * Guava’s Multiset is used to count the number of transit relationships.
 * See bgpvis.AsGraph, bgpvis.AsGraphAnnotator
 
+Run bgpvis.AsGraphAnnotator.java with the following VM arguments:
+```
+-Xms2048m
+-Dbgp.in.file="path/to/file"
+-Dbgp.in.transit-count-threshold="1"
+-Dbgp.in.degree-size-ratio="60"
+-Dbgp.out.file="path/to/file"
+```
+
 # Task 4
 
 * Prune stubs, then prune regional ISPs from the relationship graph. Remaining nodes are cores.
 * No further pruning is performed at this point. 
 * Transit cores are those that peer with dense cores and other transit cores. So I call the method recursively to check whether the neighbour of a transit core is also a transit core.
 * See bgpvis.AsGraph, bgpvis.AsClassifier
+
+Run bgpvis.AsClassifier.java with the following VM arguments:
+```
+-Xms2048m
+-Dbgp.in.file="path/to/file"
+-Dbgp.out.file="path/to/file"
+```
