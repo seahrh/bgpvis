@@ -13,7 +13,6 @@ L. Subramanian, S. Agarwal, J. Rexford, and R. H. Katz. Characterizing the inter
 * Duplicate ASes and AS paths are removed with java.util.HashSet.
 * See bgpvis.etl.BgpPreprocessor.java, bgpvis.AsPath
 
-## Run Instructions
 
 Run bgpvis.etl.BgpPreprocessor.java with the following VM arguments:
 ```
@@ -28,6 +27,7 @@ Run bgpvis.etl.BgpPreprocessor.java with the following VM arguments:
 * Insert node degree and a set of ASes that share the same node degree into a java.util.TreeMap, so that the ASes can be sorted by the key (node degree). 
 * Sort the TreeMap in descending node degree and get the top k ASes.
 * See bgpvis.NodeDegreeRanker, bgpvis.AsPath, bgpvis.AsGraph
+
  
 Run bgpvis.NodeDegreeRanker.java with the following VM arguments:
 ```
@@ -44,6 +44,7 @@ Run bgpvis.NodeDegreeRanker.java with the following VM arguments:
 * Guava’s Multiset is used to count the number of transit relationships.
 * See bgpvis.AsGraph, bgpvis.AsGraphAnnotator
 
+
 Run bgpvis.AsGraphAnnotator.java with the following VM arguments:
 ```
 -Xms2048m
@@ -59,6 +60,7 @@ Run bgpvis.AsGraphAnnotator.java with the following VM arguments:
 * No further pruning is performed at this point. 
 * Transit cores are those that peer with dense cores and other transit cores. So I call the method recursively to check whether the neighbour of a transit core is also a transit core.
 * See bgpvis.AsGraph, bgpvis.AsClassifier
+
 
 Run bgpvis.AsClassifier.java with the following VM arguments:
 ```
